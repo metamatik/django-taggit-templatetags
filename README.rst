@@ -34,7 +34,7 @@ In your templates, you need to load ``taggit_extras``::
 Taglists
 --------
 
-After loading ``taggit_extras`` you can create a list of tags for the whole project (in the sense of djangoproject), for an app (in the sense of djangoapp), for a model-class (to get a list for an instance of a model, just use its tag-field).
+After loading ``taggit_extras`` you can create a list of tags for the whole project (in the sense of djangoproject), for an app (in the sense of djangoapp), for a model-class (to get a list for an instance of a model, just use its tag-field), or for an arbitrarily filtered list of a single model's instances.
 
 For the tags of a project, just do::
 
@@ -44,10 +44,16 @@ For the tags of an app, just do::
 
     {% get_taglist as tags for 'yourapp' %}
     
-For the tags of an model, just do::
+For the tags of a model, just do::
 
     {% get_taglist as tags for 'yourapp.yourmodel' %}
     
+To further filter the tags of a model, you can add::
+
+    {% get_taglist as tags for 'yourapp.yourmodel' with_pk_in my_list_of_ids %}
+
+, where ``my_list_of_ids`` is a template variable containing a list of relevant model instance ids.
+
 No matter what you do, you have a list of tags in the ``tags`` template variable. You can now iterate over it::
 
     <ul>
@@ -81,7 +87,11 @@ or::
 
     {% get_tagcloud as tags for 'yourapp.yourmodel' %}
     
-respectivly. The resulting list of tags is ordered by their ``name`` attribute. Besides the ``num_items`` attribute, there's a ``weight`` attribute. Its maximum and minimum may be specified as the settings_ section reads.
+or::
+
+    {% get_tagcloud as tags for 'yourapp.yourmodel' with_pk_in my_list_of_ids %}
+
+respectively. The resulting list of tags is ordered by their ``name`` attribute. Besides the ``num_items`` attribute, there's a ``weight`` attribute. Its maximum and minimum may be specified as the settings_ section reads.
 
 Inclusion-Tag
 -------------

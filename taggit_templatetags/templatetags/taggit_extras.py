@@ -16,7 +16,7 @@ T_MIN = getattr(settings, 'TAGCLOUD_MIN', 1.0)
 
 register = template.Library()
 
-def get_queryset(forvar=None):
+def get_queryset(forvar=None, invar=None):
     if None == forvar:
         # get all tags
         queryset = Tag.objects.all()
@@ -36,7 +36,9 @@ def get_queryset(forvar=None):
             queryset = TaggedItem.objects.filter(content_type__app_label=applabel.lower())
         if model:
             queryset = queryset.filter(content_type__model=model.lower())
-            
+        if invar:
+            queryset = queryset.filter(object_id__in=invar)
+
         # get tags
         tag_ids = queryset.values_list('tag_id', flat=True)
         queryset = Tag.objects.filter(id__in=tag_ids)
@@ -61,16 +63,16 @@ def get_weight_fun(t_min, t_max, f_min, f_max):
         return t_max - (f_max-f_i)*mult_fac
     return weight_fun
 
-@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()])])
-def get_taglist(context, asvar, forvar=None):
-    queryset = get_queryset(forvar)         
+@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
+def get_taglist(context, asvar, forvar=None, invar=None):
+    queryset = get_queryset(forvar, invar)         
     queryset = queryset.order_by('-num_times')        
     context[asvar] = queryset
     return ''
 
-@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()])])
-def get_tagcloud(context, asvar, forvar=None):
-    queryset = get_queryset(forvar)
+@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
+def get_tagcloud(context, asvar, forvar=None, invar=None):
+    queryset = get_queryset(forvar, invar)    
     num_times = queryset.values_list('num_times', flat=True)
     if(len(num_times) == 0):
         context[asvar] = queryset
