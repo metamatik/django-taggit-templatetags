@@ -63,15 +63,17 @@ def get_weight_fun(t_min, t_max, f_min, f_max):
         return t_max - (f_max-f_i)*mult_fac
     return weight_fun
 
-@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
-def get_taglist(context, asvar, forvar=None, invar=None):
+@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('limit'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
+def get_taglist(context, asvar, forvar=None, limit=None, invar=None):
     queryset = get_queryset(forvar, invar)         
-    queryset = queryset.order_by('-num_times')        
+    queryset = queryset.order_by('-num_times')
+    if limit:
+        queryset = queryset[:limit]        
     context[asvar] = queryset
     return ''
 
-@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
-def get_tagcloud(context, asvar, forvar=None, invar=None):
+@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('limit'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
+def get_tagcloud(context, asvar, forvar=None, limit=None, invar=None):
     queryset = get_queryset(forvar, invar)    
     num_times = queryset.values_list('num_times', flat=True)
     if(len(num_times) == 0):
@@ -81,6 +83,8 @@ def get_tagcloud(context, asvar, forvar=None, invar=None):
     queryset = queryset.order_by('name')
     for tag in queryset:
         tag.weight = weight_fun(tag.num_times)
+    if limit:
+        queryset = queryset.order_by('?')[:limit]        
     context[asvar] = queryset
     return ''
     
