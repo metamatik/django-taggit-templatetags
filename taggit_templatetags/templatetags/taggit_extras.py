@@ -16,7 +16,7 @@ T_MIN = getattr(settings, 'TAGCLOUD_MIN', 1.0)
 
 register = template.Library()
 
-def get_queryset(forvar=None, invar=None):
+def get_queryset(forvar=None, truevar=None, invar=None):
     if None == forvar:
         # get all tags
         queryset = Tag.objects.all()
@@ -30,12 +30,20 @@ def get_queryset(forvar=None, invar=None):
                 applabel, model = forvar.rsplit('.', 1)
             except ValueError:
                 applabel = forvar
-        
-        # filter tagged items        
+
+        # filter tagged items
         if applabel:
             queryset = TaggedItem.objects.filter(content_type__app_label=applabel.lower())
         if model:
             queryset = queryset.filter(content_type__model=model.lower())
+        if truevar:
+
+            # Shut the fuck up. It works.
+            exec('from %s.models import %s' % (applabel, model))
+            exec('true_objects = %s.objects.filter(%s=True)' % (model, truevar))
+            exec('true_objects_pks = [obj.pk for obj in true_objects.all()]')
+            exec('queryset = queryset.filter(object_id__in=true_objects_pks)')
+
         if invar:
             queryset = queryset.filter(object_id__in=invar)
 
@@ -59,22 +67,34 @@ def get_weight_fun(t_min, t_max, f_min, f_max):
             mult_fac = 1.0
         else:
             mult_fac = float(t_max-t_min)/float(f_max-f_min)
-            
+
         return t_max - (f_max-f_i)*mult_fac
     return weight_fun
 
-@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('limit'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
-def get_taglist(context, asvar, forvar=None, limit=None, invar=None):
-    queryset = get_queryset(forvar, invar)         
+@tag(register, [
+    Constant('as'), Name(),
+    Optional([Constant('for'), Variable()]),
+    Optional([Constant('limit'), Variable()]),
+    Optional([Constant('with_true'), Variable()]),
+    Optional([Constant('with_pk_in'), Variable()])
+])
+def get_taglist(context, asvar, forvar=None, limit=None, truevar=None, invar=None):
+    queryset = get_queryset(forvar, truevar, invar)
     queryset = queryset.order_by('-num_times')
     if limit:
-        queryset = queryset[:limit]        
+        queryset = queryset[:limit]
     context[asvar] = queryset
     return ''
 
-@tag(register, [Constant('as'), Name(), Optional([Constant('for'), Variable()]), Optional([Constant('limit'), Variable()]), Optional([Constant('with_pk_in'), Variable()])])
-def get_tagcloud(context, asvar, forvar=None, limit=None, invar=None):
-    queryset = get_queryset(forvar, invar)    
+@tag(register, [
+    Constant('as'), Name(),
+    Optional([Constant('for'), Variable()]),
+    Optional([Constant('limit'), Variable()]),
+    Optional([Constant('with_true'), Variable()]),
+    Optional([Constant('with_pk_in'), Variable()])
+])
+def get_tagcloud(context, asvar, forvar=None, limit=None, truevar=None, invar=None):
+    queryset = get_queryset(forvar, truevar, invar)
     num_times = queryset.values_list('num_times', flat=True)
     if(len(num_times) == 0):
         context[asvar] = queryset
@@ -84,15 +104,15 @@ def get_tagcloud(context, asvar, forvar=None, limit=None, invar=None):
     for tag in queryset:
         tag.weight = weight_fun(tag.num_times)
     if limit:
-        queryset = queryset.order_by('?')[:limit]        
+        queryset = queryset.order_by('?')[:limit]
     context[asvar] = queryset
     return ''
-    
+
 def include_tagcloud(forvar=None):
     return {'forvar': forvar}
 
 def include_taglist(forvar=None):
     return {'forvar': forvar}
-  
+
 register.inclusion_tag('taggit_templatetags/taglist_include.html')(include_taglist)
 register.inclusion_tag('taggit_templatetags/tagcloud_include.html')(include_tagcloud)
