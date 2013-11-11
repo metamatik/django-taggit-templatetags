@@ -1,3 +1,4 @@
+v0.4.7, 2013-10-15 - Added 'with_true' parameter to the template tags
 v0.4.6, 2011-08-30 - Added 'with_pk_in' parameter to the template tags 
 v0.3.1-v0.4.5 - Many Bugfixes, working with django-taggit 0.9.1
 v0.3.0, 2010-09-01 - Added the test_suite parameter to setup.py with a test runner
